@@ -1,7 +1,8 @@
 import numpy as np
-from gym_footsteps_planning.footsteps_simulator import transform as tr
+import transform as tr
 import math
 import time
+import pygame
 
 
 def other_foot(foot: str) -> str:
@@ -49,6 +50,19 @@ class Simulator:
         # Extra footsteps to draw
         self.extra_footsteps = []
 
+        if self.screen is None:
+            pygame.init()
+            self.screen = pygame.display.set_mode(self.size, 0, 32)
+
+        self.checkpoints = [] # List of (x,y) tuples
+        self.start_pos = None
+        self.start_icon = pygame.image.load("Picture/pos.png").convert_alpha()
+        self.start_icon = pygame.transform.scale(self.start_icon, (64, 64))
+        self.checkpoint_icon = pygame.image.load("Picture/rumah.png").convert_alpha()
+        self.checkpoint_icon = pygame.transform.scale(self.checkpoint_icon, (64, 64))
+        self.obstacle_icon = pygame.image.load("Picture/batu.png").convert_alpha()
+        self.obstacle_icon = pygame.transform.scale(self.obstacle_icon, (64, 64))
+
     def init(self, x: float, y: float, yaw: float, start_support_foot: str = "left"):
         """
         Initializes the robot with the given foot at a given support position
@@ -57,7 +71,12 @@ class Simulator:
         self.T_world_support = tr.frame(x, y, yaw)
 
         self.footsteps: list = []
+        self.start_pos = (x, y)
         self.save_footstep()
+
+    def add_checkpoint(self, x: float, y: float):
+        """Adds a checkpoint to the environment"""
+        self.checkpoints.append((x,y))
 
     def clear_obstacles(self):
         """
@@ -65,7 +84,7 @@ class Simulator:
         """
         self.obstacles = []
 
-    def add_obstacle(self, position: np.ndarray, radius: float, color: tuple = (255, 128, 0, 128)):
+    def add_obstacle(self, position: np.ndarray, radius: float, color: tuple = (0, 0, 0, 0)):
         """
         Adds an obstacle to the environment
         """
@@ -135,7 +154,6 @@ class Simulator:
         self.desired_goal = (x, y, yaw, foot)
 
     def draw_path(self, surface):
-        import pygame
 
         if self.path is None:
             return
@@ -156,7 +174,6 @@ class Simulator:
         """
         Draws a footstep
         """
-        import pygame
 
         color = self.right_color if side == "right" else self.left_color
 
@@ -186,7 +203,6 @@ class Simulator:
         """
         Draws the grid with the given step
         """
-        import pygame
 
         for z in np.arange(xmin, xmax, step):
             if abs(z - int(z)) < 0.01:
@@ -205,7 +221,6 @@ class Simulator:
         """
         Renders the currently stored footsteps
         """
-        import pygame
 
         self.T_screen_world = tr.translation(self.size[0] / 2, self.size[1] / 2)
         self.T_screen_world[0, 0] = self.pixels_per_meter
@@ -259,18 +274,37 @@ class Simulator:
             side, pose = extra_footstep
             self.draw_footstep(side, tr.frame(*pose), 1, surface, fill=False)
 
+        if self.start_pos is not None:
+            pt_start = self.T_screen_world @ np.array([*self.start_pos, 1]).T
+            rect = self.start_icon.get_rect(center=(int(pt_start[0]), int(pt_start[1])))
+            self.screen.blit(self.start_icon, rect)
+
+        for checkpoint in self.checkpoints:
+            pt = self.T_screen_world @ np.array([checkpoint[0], checkpoint[1], 1]).T
+            rect = self.checkpoint_icon.get_rect(center=(int(pt[0]), int(pt[1])))
+            self.screen.blit(self.checkpoint_icon, rect)
+
+        for obstacle in self.obstacles:
+            pt = self.T_screen_world @ np.array([obstacle[0][0], obstacle[0][1], 1]).T
+            rect = self.checkpoint_icon.get_rect(center=(int(pt[0]), int(pt[1])))
+            self.screen.blit(self.obstacle_icon, rect)
+
         self.screen.blit(surface, (0, 0))
         pygame.event.get()
         pygame.display.flip()
         time.sleep(0.05)
 
-
 if __name__ == "__main__":
     sim = Simulator()
     sim.init(0, 0, 0)
 
+    sim.add_checkpoint(0.5, 0.2)
+    sim.add_checkpoint(1.0, -0.2)
+    sim.add_checkpoint(1.5, 0.3)
+    sim.add_obstacle((1,-1), 0.1)
+
     while True:
         sim.step(0.1, 0, 0.1)
-        # print(sim.footPosition('flying'))
         sim.render()
         time.sleep(0.5)
+
