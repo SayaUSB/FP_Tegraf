@@ -365,7 +365,7 @@ class Simulator:
     
     def sort_checkpoints_by_start(self):
         """
-        Mengurutkan checkpoint berdasarkan jarak terdekat dari posisi awal (self.start_pos)
+        Sort the checkpoints that need to be visited 
         """
         if self.start_pos is None:
             return
