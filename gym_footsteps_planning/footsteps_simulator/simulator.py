@@ -362,6 +362,27 @@ class Simulator:
             all_path += back_path[1:]  # Avoid duplicate pos
 
         return all_path
+    
+    def sort_checkpoints_by_start(self):
+        """
+        Mengurutkan checkpoint berdasarkan jarak terdekat dari posisi awal (self.start_pos)
+        """
+        if self.start_pos is None:
+            return
+
+        current = self.start_pos
+        checkpoints = self.checkpoints.copy()
+        ordered = []
+
+        while checkpoints:
+            nearest = min(checkpoints, key=lambda cp: self.heuristic(current, cp))
+            ordered.append(nearest)
+            checkpoints.remove(nearest)
+            current = nearest
+
+        self.checkpoints = ordered
+        return self.checkpoints
+
 
 if __name__ == "__main__":
     sim = Simulator()
@@ -371,6 +392,7 @@ if __name__ == "__main__":
     sim.add_checkpoint(1.0, -0.2)
     sim.add_checkpoint(1.5, 0.3)
     sim.add_obstacle((1,-1), 0.1)
+    print(sim.sort_checkpoints_by_start())
     sim.path = sim.run_to_checkpoint_and_back()
 
     while True:
