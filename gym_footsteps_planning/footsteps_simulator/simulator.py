@@ -364,9 +364,7 @@ class Simulator:
         return all_path
     
     def sort_checkpoints_by_start(self):
-        """
-        Sort the checkpoints that need to be visited 
-        """
+        """Sort the checkpoints that need to be visited """
         if self.start_pos is None:
             return
 
