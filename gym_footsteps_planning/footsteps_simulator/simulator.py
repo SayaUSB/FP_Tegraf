@@ -3,7 +3,7 @@ import transform as tr
 import math
 import time
 import pygame
-
+import heapq
 
 def other_foot(foot: str) -> str:
     """
@@ -294,6 +294,75 @@ class Simulator:
         pygame.display.flip()
         time.sleep(0.05)
 
+    def heuristic(self, a, b):
+        """Heuristic Euclidean Distance"""
+        return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+    
+    def astar(self, start, goal, obstacles, resolution=0.1):
+        "Pathfind through multiple checkpoints"
+        open_set = []
+        heapq.heappush(open_set, (0, start))
+        came_from = {}
+        g_score = {tuple(start): 0}
+
+        visited = set()
+        directions = [
+            (1, 0), (-1, 0), (0, 1), (0, -1),   # horizontal & vertical
+            (1, 1), (-1, -1), (1, -1), (-1, 1)  # diagonals
+        ]
+
+        while open_set:
+            _, current = heapq.heappop(open_set)
+            current = tuple(current)
+
+            if current in visited:
+                continue
+            visited.add(current)
+
+            if self.heuristic(current, goal) < resolution:
+                # Build path
+                path = [goal]
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.reverse()
+                return path
+
+            for dx, dy in directions:
+                neighbor = (round(current[0] + dx * resolution, 2),
+                            round(current[1] + dy * resolution, 2))
+                if any(self.heuristic(neighbor, obs[0]) <= obs[1] for obs in obstacles):
+                    continue
+                tentative_g = g_score[current] + self.heuristic(current, neighbor)
+                if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                    g_score[neighbor] = tentative_g
+                    f = tentative_g + self.heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f, neighbor))
+                    came_from[neighbor] = current
+        return []
+
+    def run_to_checkpoint_and_back(self):
+        start = sim.start_pos
+        remaining = sim.checkpoints.copy()
+        all_path = []
+        current = start
+
+        while remaining:
+            # Find the nearest checkpoint
+            nearest = min(remaining, key=lambda cp: self.heuristic(current, cp))
+            path = self.astar(current, nearest, sim.obstacles)
+            if path:
+                all_path += path[1:]  # Avoid duplicate pos
+                current = nearest
+            remaining.remove(nearest)
+
+        # Back to the starting pos
+        back_path = self.astar(current, start, sim.obstacles)
+        if back_path:
+            all_path += back_path[1:]  # Avoid duplicate pos
+
+        return all_path
+
 if __name__ == "__main__":
     sim = Simulator()
     sim.init(0, 0, 0)
@@ -302,6 +371,7 @@ if __name__ == "__main__":
     sim.add_checkpoint(1.0, -0.2)
     sim.add_checkpoint(1.5, 0.3)
     sim.add_obstacle((1,-1), 0.1)
+    sim.path = sim.run_to_checkpoint_and_back()
 
     while True:
         sim.step(0.1, 0, 0.1)
