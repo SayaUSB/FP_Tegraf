@@ -66,7 +66,11 @@ class FootstepPlanner:
 
 if __name__ == "__main__":
     ashioto = FootstepPlanner()
-    ashioto.options["start_foot_pose"] = list(map(np.float32, input("Current position (X, Y, Z): ").split()))
-    ashioto.options["target_foot_pose"] = list(map(np.float32, input("Goal position (X, Y, Z): ").split()))
-    ashioto.envInitialize()
-    ashioto.main()
+    ashioto.options["start_foot_pose"] = list(map(float, input("Start Position (X, Y, Z): ").split()))
+    checkpoints = []
+    for i in range(len(checkpoints)):
+        if i>0:
+            ashioto.options["start_foot_pose"] = checkpoints[i-1]
+        ashioto.options["target_foot_pose"] = checkpoints[i]
+        ashioto.envInitialize()
+        ashioto.main()
