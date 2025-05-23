@@ -342,22 +342,22 @@ class Simulator:
         return []
 
     def run_to_checkpoint_and_back(self):
-        start = sim.start_pos
-        remaining = sim.checkpoints.copy()
+        start = self.start_pos
+        remaining = self.checkpoints.copy()
         all_path = []
         current = start
 
         while remaining:
             # Find the nearest checkpoint
             nearest = min(remaining, key=lambda cp: self.heuristic(current, cp))
-            path = self.astar(current, nearest, sim.obstacles)
+            path = self.astar(current, nearest, self.obstacles)
             if path:
                 all_path += path[1:]  # Avoid duplicate pos
                 current = nearest
             remaining.remove(nearest)
 
         # Back to the starting pos
-        back_path = self.astar(current, start, sim.obstacles)
+        back_path = self.astar(current, start, self.obstacles)
         if back_path:
             all_path += back_path[1:]  # Avoid duplicate pos
 
