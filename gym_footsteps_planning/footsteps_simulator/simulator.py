@@ -1,5 +1,5 @@
 import numpy as np
-import transform as tr
+import gym_footsteps_planning.footsteps_simulator.transform as tr
 import math
 import time
 import pygame
