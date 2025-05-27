@@ -41,6 +41,7 @@ class FootstepsPlanningEnv(gymnasium.Env):
             "target_support_foot": np.array([8,6,0], dtype=np.float32),
             "panjang": 8, # [m]
             "lebar": 6, # [m]
+            "home": np.array([0,0,0], dtype=np.float32),
         }
         self.options.update(options or {})
 
@@ -247,6 +248,7 @@ class FootstepsPlanningEnv(gymnasium.Env):
         self.target_foot_pose = options.get("target_foot_pose", None)
         self.target_support_foot = options.get("target_support_foot", None)
         self.obstacle_radius = options.get("obstacle_radius", None)
+        self.home = self.options["home"]
 
         # Choosing obstacle radius and position
         if self.options["has_obstacle"]:
@@ -274,7 +276,7 @@ class FootstepsPlanningEnv(gymnasium.Env):
             start_foot_pose = self.np_random.uniform([-2, -2, -math.pi], [2, 2, math.pi])
 
         # Initializing the simulator
-        self.simulator.init(*start_foot_pose, start_support_foot)
+        self.simulator.init(*start_foot_pose,*self.home, start_support_foot)
 
         if self.target_foot_pose is None:
             if self.options["multi_goal"]:
@@ -294,3 +296,11 @@ class FootstepsPlanningEnv(gymnasium.Env):
 
     def do_render(self):
         self.simulator.render()
+
+    def add_checkpoints(self, checkpoints: list):
+        for checkpoint in checkpoints:
+            self.simulator.add_checkpoint(checkpoint[0], checkpoint[1])
+
+    def add_obstacles(self, obstacles: list):
+        for obstacle in obstacles:
+            self.simulator.add_obstacle(obstacle[0], obstacle[1])

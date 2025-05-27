@@ -1,9 +1,13 @@
 import numpy as np
-import gym_footsteps_planning.footsteps_simulator.transform as tr
 import math
 import time
 import pygame
 import heapq
+
+if __name__ == "__main__":
+    import transform as tr
+else:
+    import gym_footsteps_planning.footsteps_simulator.transform as tr
 
 def other_foot(foot: str) -> str:
     """
@@ -25,15 +29,15 @@ class Simulator:
         self.feet_spacing: float = 0.15  # [m]
 
         # Initializing the robot
-        self.init(0, 0, 0, 0)
+        self.init(0, 0, 0, 0, 0, 0)
 
         # Rendering parameters
         self.screen = None
-        self.size: tuple = (1024, 800)
-        self.pixels_per_meter: int = 200
+        # self.size: tuple = (1024, 800)
+        # self.pixels_per_meter: int = 200
         # Demo mode
-        # self.size = (1920, 1080)
-        # self.pixels_per_meter = 300
+        self.size = (1920, 1080)
+        self.pixels_per_meter = 150
 
         self.left_color: tuple = (221, 103, 75)
         self.right_color: tuple = (75, 164, 221)
@@ -63,7 +67,7 @@ class Simulator:
         self.obstacle_icon = pygame.image.load("Picture/batu.png").convert_alpha()
         self.obstacle_icon = pygame.transform.scale(self.obstacle_icon, (64, 64))
 
-    def init(self, x: float, y: float, yaw: float, start_support_foot: str = "left"):
+    def init(self, x: float, y: float, yaw: float, x_home: float, y_home: float, degree: float, start_support_foot: str = "left"):
         """
         Initializes the robot with the given foot at a given support position
         """
@@ -72,6 +76,7 @@ class Simulator:
 
         self.footsteps: list = []
         self.start_pos = (x, y)
+        self.home = (x_home, y_home)
         self.save_footstep()
 
     def add_checkpoint(self, x: float, y: float):
@@ -274,8 +279,8 @@ class Simulator:
             side, pose = extra_footstep
             self.draw_footstep(side, tr.frame(*pose), 1, surface, fill=False)
 
-        if self.start_pos is not None:
-            pt_start = self.T_screen_world @ np.array([*self.start_pos, 1]).T
+        if self.home is not None:
+            pt_start = self.T_screen_world @ np.array([self.home[0], self.home[1], 1]).T
             rect = self.start_icon.get_rect(center=(int(pt_start[0]), int(pt_start[1])))
             self.screen.blit(self.start_icon, rect)
 
@@ -384,7 +389,7 @@ class Simulator:
 
 if __name__ == "__main__":
     sim = Simulator()
-    sim.init(0, 0, 0)
+    sim.init(0, 0, 0, 0, 0, 0)
 
     sim.add_checkpoint(0.5, 0.2)
     sim.add_checkpoint(1.0, -0.2)
