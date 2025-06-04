@@ -20,8 +20,8 @@ class FootstepsPlanningEnv(gymnasium.Env):
             "max_dy": 0.04,  # [m]
             "max_dtheta": np.deg2rad(20),  # [rad]
             # Target tolerance
-            "tolerance_distance": 0.05,  # [m]
-            "tolerance_angle": np.deg2rad(5),  # [rad]
+            "tolerance_distance": 0.2,  # [m]
+            "tolerance_angle": float('inf'),  # [rad]
             # Do we include collisions with the ball?
             "has_obstacle": False,
             "obstacle_max_radius": 0.25,  # [m]
