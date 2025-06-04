@@ -1,3 +1,5 @@
+from matplotlib.colors import to_rgb
+import matplotlib.pyplot as plt
 import numpy as np
 import math
 import time
@@ -164,9 +166,12 @@ class Simulator:
             return
 
         for i in range(len(self.path) - 1):
+            progress = i / (len(self.path) - 1)
+            color = tuple(int(255*x) for x in to_rgb(plt.cm.cool(progress)))
+            
             ptA = self.T_screen_world @ np.array([self.path[i][0], self.path[i][1], 1]).T
             ptB = self.T_screen_world @ np.array([self.path[i + 1][0], self.path[i + 1][1], 1]).T
-            pygame.draw.line(surface, (255, 50, 215), (ptA[0], ptA[1]), (ptB[0], ptB[1]), 3)
+            pygame.draw.line(surface, color, (ptA[0], ptA[1]), (ptB[0], ptB[1]), 5)
 
     def draw_footstep(
         self,
@@ -362,7 +367,7 @@ class Simulator:
             remaining.remove(nearest)
 
         # Back to the starting pos
-        back_path = self.astar(current, start, self.obstacles)
+        back_path = self.astar(current, self.home, self.obstacles)
         if back_path:
             all_path += back_path[1:]  # Avoid duplicate pos
 

@@ -303,4 +303,4 @@ class FootstepsPlanningEnv(gymnasium.Env):
 
     def add_obstacles(self, obstacles: list):
         for obstacle in obstacles:
-            self.simulator.add_obstacle(obstacle[0], obstacle[1])
+            self.simulator.add_obstacle(np.array(obstacle), 0.25)

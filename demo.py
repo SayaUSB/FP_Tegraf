@@ -20,8 +20,8 @@ class FootstepPlanner:
             "max_dy": 0.04,  # [m]
             "max_dtheta": np.deg2rad(20),  # [rad]
             # Target tolerance
-            "tolerance_distance": 0.2,  # [m]
-            "tolerance_angle": np.deg2rad(180),  # [rad]
+            "tolerance_distance": 1,  # [m]
+            "tolerance_angle": float("inf"),  # [rad]
             # Do we include collisions with the ball?
             "has_obstacle": False,
             "obstacle_max_radius": 0.25,  # [m]
@@ -66,18 +66,40 @@ class FootstepPlanner:
             self.env.simulator.path = self.env.simulator.run_to_checkpoint_and_back()
             self.env.render()
 
+def sort_checkpoints(checkpoints: list, start_pos: tuple):
+    """Sort the checkpoints that need to be visited"""
+    if start_pos is None:
+        return
+    
+    current = start_pos
+    ordered = []
+
+    while checkpoints:
+        nearest = min(checkpoints, key=lambda cp: heuristic(current, cp))
+        ordered.append(nearest)
+        checkpoints.remove(nearest)
+        current = nearest
+
+    return ordered
+
+def heuristic(a, b):
+    """Heuristic Euclidean Distance"""
+    return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+
 if __name__ == "__main__":
     ashioto = FootstepPlanner()
     ashioto.options["start_foot_pose"] = list(map(float, input("Start Position (X, Y, Z): ").split()))
     ashioto.options["home"] = ashioto.options["start_foot_pose"]
-    checkpoints = [(3,3,0)]
-    # checkpoints = sorted(checkpoints, key=lambda p: (p[0], p[1]))
+    checkpoints = [(3,3,0),(1,1,-3)]
+    obstacles = [(2,2)]
+    # checkpoints = sort_checkpoints(checkpoints, ashioto.options["home"][:2])
     for i in range(len(checkpoints)):
         if i>0:
             ashioto.options["start_foot_pose"] = checkpoints[i-1]
         ashioto.options["target_foot_pose"] = checkpoints[i]
         ashioto.envInitialize()
         ashioto.env.add_checkpoints(checkpoints)
+        ashioto.env.add_obstacles(obstacles)
         ashioto.main()
     
     # Kembali posisi awal
@@ -85,4 +107,5 @@ if __name__ == "__main__":
     ashioto.options["target_foot_pose"] = ashioto.options["home"]
     ashioto.envInitialize()
     ashioto.env.add_checkpoints(checkpoints)
+    ashioto.env.add_obstacles(obstacles)
     ashioto.main()
