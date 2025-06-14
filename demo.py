@@ -90,9 +90,9 @@ if __name__ == "__main__":
     ashioto = FootstepPlanner()
     ashioto.options["start_foot_pose"] = list(map(float, input("Start Position (X, Y, Z): ").split()))
     ashioto.options["home"] = ashioto.options["start_foot_pose"]
-    checkpoints = [(3,3,0),(1,1,-3)]
+    checkpoints = [(3,3,0),(1,1,-3), (-1,-3,-2)]
     obstacles = [(2,2)]
-    # checkpoints = sort_checkpoints(checkpoints, ashioto.options["home"][:2])
+    checkpoints = sort_checkpoints(checkpoints, ashioto.options["home"][:2])
     for i in range(len(checkpoints)):
         if i>0:
             ashioto.options["start_foot_pose"] = checkpoints[i-1]

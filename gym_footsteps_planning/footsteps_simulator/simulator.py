@@ -308,17 +308,17 @@ class Simulator:
         """Heuristic Euclidean Distance"""
         return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
     
-    def astar(self, start, goal, obstacles, resolution=0.1):
-        "Pathfind through multiple checkpoints"
+    def astar(self, start, goal, obstacles, resolution=0.1, angle_step=30):
+        "Pathfind through multiple checkpoints with 360° directions"
         open_set = []
-        heapq.heappush(open_set, (0, start))
+        heapq.heappush(open_set, (0, tuple(start)))
         came_from = {}
         g_score = {tuple(start): 0}
 
         visited = set()
         directions = [
-            (1, 0), (-1, 0), (0, 1), (0, -1),   # horizontal & vertical
-            (1, 1), (-1, -1), (1, -1), (-1, 1)  # diagonals
+            (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
+            for angle in range(0, 360, angle_step)
         ]
 
         while open_set:
@@ -330,7 +330,6 @@ class Simulator:
             visited.add(current)
 
             if self.heuristic(current, goal) < resolution:
-                # Build path
                 path = [goal]
                 while current in came_from:
                     path.append(current)
@@ -339,8 +338,10 @@ class Simulator:
                 return path
 
             for dx, dy in directions:
-                neighbor = (round(current[0] + dx * resolution, 2),
-                            round(current[1] + dy * resolution, 2))
+                neighbor = (
+                    round(current[0] + dx * resolution, 2),
+                    round(current[1] + dy * resolution, 2)
+                )
                 if any(self.heuristic(neighbor, obs[0]) <= obs[1] for obs in obstacles):
                     continue
                 tentative_g = g_score[current] + self.heuristic(current, neighbor)
@@ -349,10 +350,11 @@ class Simulator:
                     f = tentative_g + self.heuristic(neighbor, goal)
                     heapq.heappush(open_set, (f, neighbor))
                     came_from[neighbor] = current
+
         return []
 
     def run_to_checkpoint_and_back(self):
-        start = self.start_pos
+        start = self.home
         remaining = self.checkpoints.copy()
         all_path = []
         current = start
@@ -367,9 +369,9 @@ class Simulator:
             remaining.remove(nearest)
 
         # Back to the starting pos
-        back_path = self.astar(current, self.home, self.obstacles)
-        if back_path:
-            all_path += back_path[1:]  # Avoid duplicate pos
+        # back_path = self.astar(current, self.home, self.obstacles[-1])
+        # if back_path:
+        #     all_path += back_path[1:] # Avoid duplicate pos
 
         return all_path
     
