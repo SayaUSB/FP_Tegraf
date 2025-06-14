@@ -69,6 +69,62 @@ class Simulator:
         self.obstacle_icon = pygame.image.load("Picture/batu.png").convert_alpha()
         self.obstacle_icon = pygame.transform.scale(self.obstacle_icon, (64, 64))
 
+        # UI Button
+        self.button_font = pygame.font.SysFont("Arial", 24)
+        self.buttons = {
+            "Add Obstacle": pygame.Rect(20, 20, 160, 40),
+            "Add Checkpoint": pygame.Rect(200, 20, 180, 40),
+            "Set Start": pygame.Rect(400, 20, 140, 40),
+        }
+        self.active_mode = "Add Obstacle"
+
+        # Direction
+        self.directions = [
+            (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
+            for angle in range(0, 360, 45)
+        ]
+
+    def draw_buttons(self):
+        for label, rect in self.buttons.items():
+            color = (0, 200, 0) if self.active_mode == label else (180, 180, 180)
+            pygame.draw.rect(self.screen, color, rect)
+            text_surf = self.button_font.render(label, True, (0, 0, 0))
+            self.screen.blit(text_surf, (rect.x + 10, rect.y + 5))
+
+    def handle_click(self, pos, button):
+        for label, rect in self.buttons.items():
+            if rect.collidepoint(pos):
+                self.active_mode = label
+                return
+
+        world_pos = np.linalg.inv(self.T_screen_world) @ np.array([pos[0], pos[1], 1])
+        x, y = round(world_pos[0], 2), round(world_pos[1], 2)
+
+        if button == 1:  # Left click
+            if self.active_mode == "Add Obstacle":
+                self.add_obstacle((x, y), 0.1)
+            elif self.active_mode == "Add Checkpoint":
+                self.add_checkpoint(x, y)
+            elif self.active_mode == "Set Start":
+                self.init(x, y, 0, x, y, 0)
+        elif button == 3:  #  Right click
+            self.remove_nearest_object(x, y)
+
+    def remove_nearest_object(self, x, y, threshold=0.2):
+        target = (x, y)
+
+        # Remove obstacle
+        for obs in self.obstacles:
+            if self.heuristic(obs[0], target) <= threshold:
+                self.obstacles.remove(obs)
+                return
+
+        # Remove checkpoint
+        for cp in self.checkpoints:
+            if self.heuristic(cp, target) <= threshold:
+                self.checkpoints.remove(cp)
+                return
+
     def init(self, x: float, y: float, yaw: float, x_home: float, y_home: float, degree: float, start_support_foot: str = "left"):
         """
         Initializes the robot with the given foot at a given support position
@@ -299,6 +355,7 @@ class Simulator:
             rect = self.checkpoint_icon.get_rect(center=(int(pt[0]), int(pt[1])))
             self.screen.blit(self.obstacle_icon, rect)
 
+        self.draw_buttons()
         self.screen.blit(surface, (0, 0))
         pygame.event.get()
         pygame.display.flip()
@@ -308,18 +365,19 @@ class Simulator:
         """Heuristic Euclidean Distance"""
         return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
     
-    def astar(self, start, goal, obstacles, resolution=0.1, angle_step=30):
+    def astar(self, start, goal, obstacles, resolution=0.2, angle_step=30):
         "Pathfind through multiple checkpoints with 360° directions"
+
+        # Check if start and goal are too close
+        if self.heuristic(start, goal) < resolution:
+            return [goal]
+
         open_set = []
         heapq.heappush(open_set, (0, tuple(start)))
         came_from = {}
         g_score = {tuple(start): 0}
 
         visited = set()
-        directions = [
-            (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
-            for angle in range(0, 360, angle_step)
-        ]
 
         while open_set:
             _, current = heapq.heappop(open_set)
@@ -337,7 +395,7 @@ class Simulator:
                 path.reverse()
                 return path
 
-            for dx, dy in directions:
+            for dx, dy in self.directions:
                 neighbor = (
                     round(current[0] + dx * resolution, 2),
                     round(current[1] + dy * resolution, 2)
@@ -396,17 +454,31 @@ class Simulator:
 
 if __name__ == "__main__":
     sim = Simulator()
+    clock = pygame.time.Clock()
     sim.init(0, 0, 0, 0, 0, 0)
 
-    sim.add_checkpoint(0.5, 0.2)
-    sim.add_checkpoint(1.0, -0.2)
-    sim.add_checkpoint(1.5, 0.3)
-    sim.add_obstacle((1,-1), 0.1)
+    # sim.add_checkpoint(0.5, 0.2)
+    # sim.add_checkpoint(1.0, -0.2)
+    # sim.add_checkpoint(1.5, 0.3)
+    # sim.add_obstacle((1,-1), 0.1)
     print(sim.sort_checkpoints_by_start())
     sim.path = sim.run_to_checkpoint_and_back()
 
-    while True:
-        sim.step(0.1, 0, 0.1)
+    # while True:
+    #     sim.step(0.1, 0, 0.1)
+    #     sim.render()
+    #     time.sleep(0.5)
+
+    running = True
+    while running:
+        clock.tick(30)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                sim.handle_click(event.pos, event.button)
+
         sim.render()
-        time.sleep(0.5)
+        time.sleep(0.05)
 
