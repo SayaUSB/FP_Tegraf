@@ -105,6 +105,7 @@ class Simulator:
                 self.active_mode = label
                 if label == "Plan Path":
                     self.plan_path()
+                    return True
                 if label == "Reset":
                     self.reset_simulator()
                 return
@@ -151,7 +152,7 @@ class Simulator:
 
     def add_checkpoint(self, x: float, y: float):
         """Adds a checkpoint to the environment"""
-        self.checkpoints.append((x,y))
+        self.checkpoints.append([x, y])
 
     def clear_obstacles(self):
         """
