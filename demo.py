@@ -1,7 +1,6 @@
 import numpy as np
 from openvino.runtime import Core
 from initialize import initialize
-from gymnasium.wrappers import TimeLimit
 import pygame
 
 # Intialize OpenVINO model
