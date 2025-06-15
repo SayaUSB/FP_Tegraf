@@ -63,7 +63,7 @@ class Simulator:
         self.checkpoints = [] # List of (x,y) tuples
         self.start_pos = None
         self.start_icon = pygame.image.load("Picture/pos.png").convert_alpha()
-        self.start_icon = pygame.transform.scale(self.start_icon, (64, 64))
+        self.start_icon = pygame.transform.scale(self.start_icon, (128, 128))
         self.checkpoint_icon = pygame.image.load("Picture/rumah.png").convert_alpha()
         self.checkpoint_icon = pygame.transform.scale(self.checkpoint_icon, (64, 64))
         self.obstacle_icon = pygame.image.load("Picture/batu.png").convert_alpha()
@@ -72,9 +72,11 @@ class Simulator:
         # UI Button
         self.button_font = pygame.font.SysFont("Arial", 24)
         self.buttons = {
-            "Add Obstacle": pygame.Rect(20, 20, 160, 40),
-            "Add Checkpoint": pygame.Rect(200, 20, 180, 40),
-            "Set Start": pygame.Rect(400, 20, 140, 40),
+            "Add Obstacle": pygame.Rect(150, 20, 180, 40),
+            "Add Checkpoint": pygame.Rect(150, 80, 180, 40),
+            "Set Start": pygame.Rect(150, 140, 180, 40),
+            "Plan Path": pygame.Rect(150, 200, 180, 40),
+            "Reset": pygame.Rect(150, 260, 180, 40),
         }
         self.active_mode = "Add Obstacle"
 
@@ -83,6 +85,12 @@ class Simulator:
             (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
             for angle in range(0, 360, 45)
         ]
+        
+        # FPS tracking
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("Arial", 24)
+        self.fps = 0
+        self.last_time = time.time()
 
     def draw_buttons(self):
         for label, rect in self.buttons.items():
@@ -95,6 +103,10 @@ class Simulator:
         for label, rect in self.buttons.items():
             if rect.collidepoint(pos):
                 self.active_mode = label
+                if label == "Plan Path":
+                    self.plan_path()
+                if label == "Reset":
+                    self.reset_simulator()
                 return
 
         world_pos = np.linalg.inv(self.T_screen_world) @ np.array([pos[0], pos[1], 1])
@@ -102,7 +114,7 @@ class Simulator:
 
         if button == 1:  # Left click
             if self.active_mode == "Add Obstacle":
-                self.add_obstacle((x, y), 0.1)
+                self.add_obstacle((x, y), 0.5)
             elif self.active_mode == "Add Checkpoint":
                 self.add_checkpoint(x, y)
             elif self.active_mode == "Set Start":
@@ -110,7 +122,7 @@ class Simulator:
         elif button == 3:  #  Right click
             self.remove_nearest_object(x, y)
 
-    def remove_nearest_object(self, x, y, threshold=0.2):
+    def remove_nearest_object(self, x, y, threshold=0.5):
         target = (x, y)
 
         # Remove obstacle
@@ -282,11 +294,26 @@ class Simulator:
             ptA = self.T_screen_world @ np.array([xmin, z, 1]).T
             ptB = self.T_screen_world @ np.array([xmax, z, 1]).T
             pygame.draw.line(self.screen, color, (ptA[0], ptA[1]), (ptB[0], ptB[1]), width=2)
+            
+    def draw_fps_counter(self):
+        """Draws the FPS counter in the top-right corner"""
+        fps_text = f"FPS: {self.fps:.1f}"
+        text_surf = self.font.render(fps_text, True, (0, 0, 0))
+        text_rect = text_surf.get_rect(topright=(self.size[0] - 20, 20))
+        pygame.draw.rect(self.screen, (200, 200, 200, 180), 
+                         (text_rect.left - 10, text_rect.top - 5, 
+                          text_rect.width + 20, text_rect.height + 10))
+        self.screen.blit(text_surf, text_rect)
 
     def render(self):
         """
         Renders the currently stored footsteps
         """
+        # Calculate FPS
+        current_time = time.time()
+        dt = current_time - self.last_time
+        self.last_time = current_time
+        self.fps = 1.0 / dt if dt > 0 else 0
 
         self.T_screen_world = tr.translation(self.size[0] / 2, self.size[1] / 2)
         self.T_screen_world[0, 0] = self.pixels_per_meter
@@ -357,9 +384,11 @@ class Simulator:
 
         self.draw_buttons()
         self.screen.blit(surface, (0, 0))
-        pygame.event.get()
+        
+        # Draw FPS counter
+        self.draw_fps_counter()
+        
         pygame.display.flip()
-        time.sleep(0.05)
 
     def heuristic(self, a, b):
         """Heuristic Euclidean Distance"""
@@ -379,6 +408,13 @@ class Simulator:
 
         visited = set()
 
+        obstacle_grid = {}
+        for obs in obstacles:
+            key = (int(obs[0][0]/1), int(obs[0][1]/1))  # Grid 1x1 meter
+            if key not in obstacle_grid:
+                obstacle_grid[key] = []
+            obstacle_grid[key].append(obs)
+
         while open_set:
             _, current = heapq.heappop(open_set)
             current = tuple(current)
@@ -394,8 +430,22 @@ class Simulator:
                     current = came_from[current]
                 path.reverse()
                 return path
-
+            
             for dx, dy in self.directions:
+                neighbor = (current[0] + dx * resolution, current[1] + dy * resolution)
+                
+                # Check local grid for obstacles
+                neighbor_key = (int(neighbor[0]), int(neighbor[1]))
+                collision = False
+                if neighbor_key in obstacle_grid:
+                    for obs in obstacle_grid[neighbor_key]:
+                        if self.heuristic(neighbor, obs[0]) <= obs[1]:
+                            collision = True
+                            break
+                if collision:
+                    continue
+
+            # for dx, dy in self.directions:
                 neighbor = (
                     round(current[0] + dx * resolution, 2),
                     round(current[1] + dy * resolution, 2)
@@ -433,6 +483,12 @@ class Simulator:
 
         return all_path
     
+    def plan_path(self):
+        """Execute the path planning algorithm to visit all checkpoints"""
+        if self.checkpoints:
+            self.sort_checkpoints_by_start()
+            self.path = self.run_to_checkpoint_and_back()
+    
     def sort_checkpoints_by_start(self):
         """Sort the checkpoints that need to be visited """
         if self.start_pos is None:
@@ -450,19 +506,23 @@ class Simulator:
 
         self.checkpoints = ordered
         return self.checkpoints
-
+    
+    def reset_simulator(self):
+        """Reset the simulator to initial state"""
+        self.obstacles = []
+        self.checkpoints = []
+        self.path = None
+        self.init(0, 0, 0, 0, 0, 0) 
 
 if __name__ == "__main__":
     sim = Simulator()
-    clock = pygame.time.Clock()
-    sim.init(0, 0, 0, 0, 0, 0)
+    # sim.init(0, 0, 0, 0, 0, 0)
 
     # sim.add_checkpoint(0.5, 0.2)
     # sim.add_checkpoint(1.0, -0.2)
     # sim.add_checkpoint(1.5, 0.3)
     # sim.add_obstacle((1,-1), 0.1)
-    print(sim.sort_checkpoints_by_start())
-    sim.path = sim.run_to_checkpoint_and_back()
+    # sim.path = sim.run_to_checkpoint_and_back()
 
     # while True:
     #     sim.step(0.1, 0, 0.1)
@@ -471,7 +531,7 @@ if __name__ == "__main__":
 
     running = True
     while running:
-        clock.tick(30)
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -480,5 +540,3 @@ if __name__ == "__main__":
                 sim.handle_click(event.pos, event.button)
 
         sim.render()
-        time.sleep(0.05)
-
