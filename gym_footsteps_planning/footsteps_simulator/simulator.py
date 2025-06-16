@@ -115,7 +115,7 @@ class Simulator:
 
         if button == 1:  # Left click
             if self.active_mode == "Add Obstacle":
-                self.add_obstacle((x, y), 0.5)
+                self.add_obstacle((x, y), 0.2)
             elif self.active_mode == "Add Checkpoint":
                 self.add_checkpoint(x, y)
             elif self.active_mode == "Set Start":
@@ -160,7 +160,7 @@ class Simulator:
         """
         self.obstacles = []
 
-    def add_obstacle(self, position: np.ndarray, radius: float, color: tuple = (0, 0, 0, 0)):
+    def add_obstacle(self, position: np.ndarray, radius: float, color: tuple = (255, 0, 0, 255)):
         """
         Adds an obstacle to the environment
         """
@@ -523,19 +523,6 @@ class Simulator:
 
 if __name__ == "__main__":
     sim = Simulator()
-    # sim.init(0, 0, 0, 0, 0, 0)
-
-    # sim.add_checkpoint(0.5, 0.2)
-    # sim.add_checkpoint(1.0, -0.2)
-    # sim.add_checkpoint(1.5, 0.3)
-    # sim.add_obstacle((1,-1), 0.1)
-    # sim.path = sim.run_to_checkpoint_and_back()
-
-    # while True:
-    #     sim.step(0.1, 0, 0.1)
-    #     sim.render()
-    #     time.sleep(0.5)
-
     running = True
     while running:
         

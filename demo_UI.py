@@ -188,7 +188,9 @@ if __name__ == "__main__":
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if hasattr(planner.env, 'simulator'):
                     planner.env.simulator.handle_click(event.pos, event.button)
-                    
+                    if planner.env.simulator.active_mode == "Set Start":
+                        planner.env.options["home"] = np.array([event.pos[0], event.pos[1], 0], dtype=np.float32)
+                        # planner.env.simulator.
                     if planner.env.simulator.active_mode == "Plan Path":
                         sorted_cps = sort_checkpoints(
                             planner.env.simulator.checkpoints,
