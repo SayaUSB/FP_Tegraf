@@ -273,10 +273,16 @@ class Simulator:
         color += (alpha,)
 
         if fill:
-            pygame.draw.polygon(surface, color, result)
-            pygame.draw.aalines(surface, (0, 0, 0, int(alpha)), True, result)
+            try:
+                pygame.draw.polygon(surface, color, result)
+                pygame.draw.aalines(surface, (0, 0, 0, int(alpha)), True, result)
+            except:
+                pass
         else:
-            pygame.draw.polygon(surface, color, result, width=3)
+            try:
+                pygame.draw.polygon(surface, color, result, width=3)
+            except:
+                pass
 
     def draw_grid(self, xmin: float = -4, xmax: float = 4, step: float = 0.25):
         """
