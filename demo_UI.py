@@ -62,33 +62,18 @@ class FootstepPlanner:
     def run_plan(self, checkpoints):
         """Run the planning algorithm in a separate thread"""
         try:
-            # Initialize environment
             self.envInitialize()
-            
-            # Add obstacles and checkpoints
             if hasattr(self.env, 'simulator'):
                 self.env.simulator.checkpoints = checkpoints
-                
-            # Start from home position for the first checkpoint
             current_start = self.options["home"]
-            
-            # Run through all checkpoints
             for i in range(len(checkpoints)):
-                # Update start position to the previous checkpoint
                 if i > 0:
                     current_start = checkpoints[i-1]
-                    
-                # Set start and target positions
                 self.options["start_foot_pose"] = current_start
                 self.options["target_foot_pose"] = checkpoints[i]
-                
-                # Reset environment with new start and target
                 self.envInitialize()
-                
-                # Run to current target
                 self.run_to_target()
             
-            # Return to home position from the last checkpoint
             self.options["start_foot_pose"] = checkpoints[-1]
             self.options["target_foot_pose"] = self.options["home"]
             self.envInitialize()
