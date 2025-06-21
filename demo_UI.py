@@ -180,7 +180,7 @@ if __name__ == "__main__":
     pygame.init()
     planner = FootstepPlanner()
     planner.envInitialize()
-    clock = pygame.time.Clock() # FPS Limiter
+    clock = pygame.time.Clock()
     running = True
     
     while running:
