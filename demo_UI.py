@@ -198,7 +198,6 @@ if __name__ == "__main__":
                     planner.env.simulator.handle_click(event.pos, event.button)
                     if planner.env.simulator.active_mode == "Set Start":
                         planner.env.options["home"] = np.array([event.pos[0], event.pos[1], 0], dtype=np.float32)
-                        # planner.env.simulator.
                     if planner.env.simulator.active_mode == "Plan Path":
                         sorted_cps = sort_checkpoints(
                             planner.env.simulator.checkpoints,
@@ -210,15 +209,12 @@ if __name__ == "__main__":
         # Process state updates from planning thread
         while not planner.state_queue.empty():
             state = planner.state_queue.get()
-            # You can use this state to update the UI if needed
             print(f"Foot Coord: {state['foot_coord']}, Support Foot: {state['support_foot']}")
             
             if state['terminated']:
                 print("Target reached!")
 
-        # Render the simulator
         if hasattr(planner.env, 'simulator'):
             planner.env.simulator.render()
         
-        # Control FPS
         clock.tick(120)
