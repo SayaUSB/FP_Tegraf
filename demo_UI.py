@@ -6,6 +6,7 @@ import sys
 import threading
 import time
 import queue
+import math
 
 class FootstepPlanner:
     def __init__(self):
@@ -140,31 +141,38 @@ class FootstepPlanner:
         )
         self.planning_thread.start()
 
-def heuristic(a, b):
-    """Heuristic Euclidean Distance"""
-    return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
+def angular_distance(a, b):
+    """Compute minimal angular difference in radians"""
+    return min(abs(a - b), 2 * math.pi - abs(a - b))
 
-def sort_checkpoints(checkpoints: list, start_pos: tuple):
-    """Sort the checkpoints that need to be visited"""
+def heuristic(a, b, angle_weight=1.0):
+    """Heuristic that combines Euclidean distance and orientation difference"""
+    dist = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+    
+    theta_a = a[2] if len(a) > 2 else 0
+    theta_b = b[2] if len(b) > 2 else 0
+    angle_diff = angular_distance(theta_a, theta_b)
+    
+    return dist + angle_weight * angle_diff
+
+def sort_checkpoints(checkpoints: list, start_pos: tuple, angle_weight=1.0):
+    """Sort the checkpoints and adjust their orientation for minimal turns"""
     if start_pos is None:
         return checkpoints
-    
+
     current = start_pos
     remaining = checkpoints.copy()
     ordered = []
 
     while remaining:
-        nearest = min(remaining, key=lambda cp: heuristic(current, cp))
-        ordered.append(nearest)
-        # Find and remove the nearest checkpoint
-        index_to_remove = None
-        for i, cp in enumerate(remaining):
-            if cp[0] == nearest[0] and cp[1] == nearest[1]:
-                index_to_remove = i
-                break
-        if index_to_remove is not None:
-            del remaining[index_to_remove]
-        current = nearest
+        nearest = min(remaining, key=lambda cp: heuristic(current, cp, angle_weight))
+        remaining.remove(nearest)
+        dx = nearest[0] - current[0]
+        dy = nearest[1] - current[1]
+        new_theta = math.atan2(dy, dx)
+        ordered.append((nearest[0], nearest[1], new_theta))
+
+        current = (nearest[0], nearest[1], new_theta)
 
     return ordered
 
