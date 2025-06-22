@@ -122,7 +122,7 @@ class Simulator:
                 self.init(x, y, 0, x, y, 0)
         elif button == 3:  
             self.remove_nearest_object(x, y)
-        elif button == 6:  
+        elif button == 7:  
             if self.active_mode == "Add Checkpoint":
                 self.add_checkpoint(x, y, False)  
 
