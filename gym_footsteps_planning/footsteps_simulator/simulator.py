@@ -113,15 +113,18 @@ class Simulator:
         world_pos = np.linalg.inv(self.T_screen_world) @ np.array([pos[0], pos[1], 1])
         x, y = round(world_pos[0], 2), round(world_pos[1], 2)
 
-        if button == 1:  # Left click
+        if button == 1:  
             if self.active_mode == "Add Obstacle":
                 self.add_obstacle((x, y), 0.2)
             elif self.active_mode == "Add Checkpoint":
-                self.add_checkpoint(x, y)
+                self.add_checkpoint(x, y, True)  
             elif self.active_mode == "Set Start":
                 self.init(x, y, 0, x, y, 0)
-        elif button == 3:  #  Right click
+        elif button == 3:  
             self.remove_nearest_object(x, y)
+        elif button == 6:  
+            if self.active_mode == "Add Checkpoint":
+                self.add_checkpoint(x, y, False)  
 
     def remove_nearest_object(self, x, y, threshold=0.5):
         target = (x, y)
@@ -150,9 +153,9 @@ class Simulator:
         self.home = (x_home, y_home)
         self.save_footstep()
 
-    def add_checkpoint(self, x: float, y: float):
+    def add_checkpoint(self, x: float, y: float, visible=True):
         """Adds a checkpoint to the environment"""
-        self.checkpoints.append([x, y])
+        self.checkpoints.append([x, y, visible])
 
     def clear_obstacles(self):
         """
@@ -380,9 +383,10 @@ class Simulator:
             self.screen.blit(self.start_icon, rect)
 
         for checkpoint in self.checkpoints:
-            pt = self.T_screen_world @ np.array([checkpoint[0], checkpoint[1], 1]).T
-            rect = self.checkpoint_icon.get_rect(center=(int(pt[0]), int(pt[1])))
-            self.screen.blit(self.checkpoint_icon, rect)
+            if checkpoint[2]: 
+                pt = self.T_screen_world @ np.array([checkpoint[0], checkpoint[1], 1]).T
+                rect = self.checkpoint_icon.get_rect(center=(int(pt[0]), int(pt[1])))
+                self.screen.blit(self.checkpoint_icon, rect)
 
         for obstacle in self.obstacles:
             pt = self.T_screen_world @ np.array([obstacle[0][0], obstacle[0][1], 1]).T
