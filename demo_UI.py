@@ -191,7 +191,7 @@ if __name__ == "__main__":
                         
                         planner.start_planning(sorted_cps)
                     if planner.env.simulator.active_mode == "Add Obstacle":
-                        planner.env.simulator.add_obstacle(np.array([event.pos[0], event.pos[1]], dtype=np.float32), 0.2)
+                        planner.env.simulator.add_obstacle([event.pos[0], event.pos[1]], 0.2)
         
         # Process state updates from planning thread
         while not planner.state_queue.empty():
