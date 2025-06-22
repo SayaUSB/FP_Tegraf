@@ -87,37 +87,25 @@ def heuristic(a, b):
     return ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5
 
 if __name__ == "__main__":
-    # ashioto = FootstepPlanner()
-    # ashioto.options["start_foot_pose"] = list(map(float, input("Start Position (X, Y, Z): ").split()))
-    # ashioto.options["home"] = ashioto.options["start_foot_pose"]
-    # checkpoints = [(3,3,0),(1,1,-3), (-1,-3,-2)]
-    # obstacles = [(2,2)]
-    # checkpoints = sort_checkpoints(checkpoints, ashioto.options["home"][:2])
-    # for i in range(len(checkpoints)):
-    #     if i>0:
-    #         ashioto.options["start_foot_pose"] = checkpoints[i-1]
-    #     ashioto.options["target_foot_pose"] = checkpoints[i]
-    #     ashioto.envInitialize()
-    #     ashioto.env.add_checkpoints(checkpoints)
-    #     ashioto.env.add_obstacles(obstacles)
-    #     ashioto.main()
-    
-    # # Kembali posisi awal
-    # ashioto.options["start_foot_pose"] = checkpoints[-1]
-    # ashioto.options["target_foot_pose"] = ashioto.options["home"]
-    # ashioto.envInitialize()
-    # ashioto.env.add_checkpoints(checkpoints)
-    # ashioto.env.add_obstacles(obstacles)
-    # ashioto.main()
-
     ashioto = FootstepPlanner()
+    ashioto.options["start_foot_pose"] = list(map(float, input("Start Position (X, Y, Z): ").split()))
+    ashioto.options["home"] = ashioto.options["start_foot_pose"]
+    checkpoints = [(3,3,0),(1,1,-3), (-1,-3,-2)]
+    obstacles = [(2,2)]
+    checkpoints = sort_checkpoints(checkpoints, ashioto.options["home"][:2])
+    for i in range(len(checkpoints)):
+        if i>0:
+            ashioto.options["start_foot_pose"] = checkpoints[i-1]
+        ashioto.options["target_foot_pose"] = checkpoints[i]
+        ashioto.envInitialize()
+        ashioto.env.add_checkpoints(checkpoints)
+        ashioto.env.add_obstacles(obstacles)
+        ashioto.main()
+    
+    # Kembali posisi awal
+    ashioto.options["start_foot_pose"] = checkpoints[-1]
+    ashioto.options["target_foot_pose"] = ashioto.options["home"]
     ashioto.envInitialize()
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                ashioto.env.simulator.handle_click(event.pos, event.button)
-
-        ashioto.env.simulator.render()
+    ashioto.env.add_checkpoints(checkpoints)
+    ashioto.env.add_obstacles(obstacles)
+    ashioto.main()
